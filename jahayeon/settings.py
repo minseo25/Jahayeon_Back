@@ -32,7 +32,7 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "jahayeon-backend.fly.dev"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "jahayeon-back.fly.dev"]
 
 # Application definition
 
@@ -91,7 +91,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
-        # 'NAME': '/data/db.sqlite3',
+        # 'NAME': '/data/db.sqlite3', # fly.io deploy
     }
 }
 
@@ -168,7 +168,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     # add your frontend deployed url here
-    "https://jahayeon-backend.fly.dev",
+    "https://jahayeon-back.fly.dev",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -181,6 +181,6 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 CSRF_TRUSTED_ORIGINS = [
-    "https://jahayeon-backend.fly.dev",
+    "https://jahayeon-back.fly.dev",
     # add your frontend deployed url here
 ]
