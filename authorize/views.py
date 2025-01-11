@@ -112,8 +112,12 @@ def google_callback(request):
                 "email": email,
                 "password": hashed_password,
                 "oauth_provider": "google",
-                "full_name": user_data.user.user_metadata.get("full_name", ""),
                 "created_at": timezone.now().isoformat(),
+                "level": 0,
+                "nickname": "익명의 지바이크" + str(uuid.uuid4())[:4],
+                "coins": 0,
+                "num_events": 0,
+                "num_parties": 0,
             }
             result = supabase.table("users").insert(user_info).execute()
             user_id = result.data[0]["user_id"]
