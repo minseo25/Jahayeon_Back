@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 
 import cv2
 import numpy as np
@@ -462,159 +461,398 @@ def parties_create(request):
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(
+    method="POST",
+    operation_description="특정 파티에 참가합니다",
+    responses={
+        200: openapi.Response(
+            description="성공",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "msg": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="성공 메시지"
+                    )
+                },
+            ),
+        ),
+        400: openapi.Response(
+            description="잘못된 요청",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "error": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="에러 메시지"
+                    )
+                },
+            ),
+        ),
+        404: openapi.Response(
+            description="파티를 찾을 수 없음",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "error": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="에러 메시지"
+                    )
+                },
+            ),
+        ),
+    },
+)
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
 def parties_join(request, party_id):
-    user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+    try:
+        # user_id = request.user.id
+        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
 
-    party = (
-        supabase.table("parties").select("*").eq("id", party_id).single().execute().data
-    )
-
-    if not party:
-        return Response({"error": "Party not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    if party["state"] != 0:
-        return Response(
-            {"error": "Party is not recruiting"}, status=status.HTTP_400_BAD_REQUEST
+        party = (
+            supabase.table("parties")
+            .select("*")
+            .eq("id", party_id)
+            .single()
+            .execute()
+            .data
         )
 
-    if party["max_users"] <= len(party["participant_ids"]) + 1:
-        return Response({"error": "Party is full"}, status=status.HTTP_400_BAD_REQUEST)
+        if not party:
+            return Response(
+                {"error": "Party not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
-    if user_id in party["participant_ids"] or user_id == party["organizer_id"]:
-        return Response(
-            {"error": "User already joined"}, status=status.HTTP_400_BAD_REQUEST
+        if party["state"] != 0:
+            return Response(
+                {"error": "Party is not recruiting"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if party["max_users"] <= len(party["participant_ids"]):
+            return Response(
+                {"error": "Party is full"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if user_id in party["participant_ids"] or user_id == party["organizer_id"]:
+            return Response(
+                {"error": "User already joined"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        party["participant_ids"].append(user_id)
+
+        party = (
+            supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
         )
 
-    party["participant_ids"].append(user_id)
-
-    party = supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
-    process_party_response(party)
-
-    return Response(party, status=status.HTTP_200_OK)
-
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def parties_start(request, party_id):
-    user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
-
-    party = (
-        supabase.table("parties").select("*").eq("id", party_id).single().execute().data
-    )
-    if not party:
-        return Response({"error": "Party not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    if party["organizer_id"] != user_id:
         return Response(
-            {"error": "Only organizer can start party"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"msg": f"User {user_id} joined party {party_id}"},
+            status=status.HTTP_200_OK,
         )
-
-    if party["state"] != 0:
-        return Response(
-            {"error": "Party is not recruiting"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    party["state"] = 1
-    party["started_at"] = datetime.now().isoformat()
-
-    party = supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
-    process_party_response(party)
-
-    return Response(party, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @swagger_auto_schema(
-    method="post",
+    method="POST",
+    operation_description="파티 운행을 시작합니다 (참가자가 출발했음을 표시)",
+    responses={
+        200: openapi.Response(
+            description="성공",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "msg": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="성공 메시지"
+                    )
+                },
+            ),
+        ),
+        400: openapi.Response(
+            description="잘못된 요청",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "error": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="에러 메시지"
+                    )
+                },
+            ),
+        ),
+        404: openapi.Response(
+            description="파티를 찾을 수 없음",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "error": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="에러 메시지"
+                    )
+                },
+            ),
+        ),
+    },
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+def parties_start(request, party_id):
+    try:
+        # user_id = request.user.id
+        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
+
+        party = (
+            supabase.table("parties")
+            .select("*")
+            .eq("id", party_id)
+            .single()
+            .execute()
+            .data
+        )
+
+        if not party:
+            return Response(
+                {"error": "Party not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if party["state"] == 1:
+            return Response(
+                {"error": "Party is already finished"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        party["omw_ids"].append(user_id)
+        party = (
+            supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
+        )
+
+        return Response(
+            {"msg": f"User {user_id} started party {party_id}"},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@swagger_auto_schema(
+    method="POST",
+    tags=["parties"],
+    operation_summary="파티 종료",
+    operation_description="파티를 종료하고 기념 사진을 업로드합니다.",
     consumes=["multipart/form-data"],
     manual_parameters=[
         openapi.Parameter(
             "image",
             in_=openapi.IN_FORM,
             type=openapi.TYPE_FILE,
-            description="이벤트 이미지",
-            required=False,
+            description="파티 기념 사진",
+            required=True,
         ),
     ],
+    responses={
+        200: openapi.Response(
+            description="종료 성공",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "url": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="업로드된 이미지 URL"
+                    ),
+                },
+            ),
+        ),
+        400: openapi.Response(
+            description="잘못된 요청",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "error": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="에러 메시지"
+                    )
+                },
+            ),
+        ),
+        404: openapi.Response(
+            description="파티를 찾을 수 없음",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "error": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="에러 메시지"
+                    )
+                },
+            ),
+        ),
+        500: openapi.Response(
+            description="서버 오류",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "error": openapi.Schema(
+                        type=openapi.TYPE_STRING, description="에러 메시지"
+                    )
+                },
+            ),
+        ),
+    },
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
 @parser_classes([MultiPartParser, FormParser])
 def parties_end(request, party_id):
-    user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+    try:
+        # user_id = request.user.id
+        user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
-    party = (
-        supabase.table("parties").select("*").eq("id", party_id).single().execute().data
-    )
-    if not party:
-        return Response({"error": "Party not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    if party["organizer_id"] != user_id:
-        return Response(
-            {"error": "Only organizer can end party"},
-            status=status.HTTP_400_BAD_REQUEST,
+        party = (
+            supabase.table("parties")
+            .select("*")
+            .eq("id", party_id)
+            .single()
+            .execute()
+            .data
         )
 
-    if party["state"] != 0:
-        return Response(
-            {"error": "Party is already finished"},
-            status=status.HTTP_400_BAD_REQUEST,
+        if not party:
+            return Response(
+                {"error": "Party not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if party["organizer_id"] != user_id:
+            return Response(
+                {"error": "Only organizer can end party"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if party["state"] != 0:
+            return Response(
+                {"error": "Party is already finished"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        image = request.FILES.get("image")
+        file_extension = image.name.split(".")[-1].lower()
+        image_bytes = apply_frame(request.FILES.get("image"))
+        image_id = str(uuid.uuid4())
+        file_path = f"{image_id}.{file_extension}"
+        upload_response = supabase.storage.from_("images").upload(
+            file_path, image_bytes
+        )
+        if not upload_response.path:
+            return Response(
+                {"error": "Failed to upload image"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        # 이미지 테이블에 정보 저장 (URL 구성 수정)
+        public_url = (
+            f"{settings.SUPABASE_URL}/storage/v1/object/public/images/{file_path}"
+        )
+        supabase.table("images").insert(
+            {"id": image_id, "party_id": party["id"], "url": public_url}
+        ).execute()
+
+        for omw_id in party["omw_ids"]:
+            user = (
+                supabase.table("users")
+                .select("*")
+                .eq("user_id", omw_id)
+                .execute()
+                .data[0]
+            )
+            supabase.table("users").update(
+                {"level": user["level"] + 5, "num_parties": user["num_parties"] + 1}
+            ).eq("user_id", omw_id).execute()
+
+        # 파티 상태 변경
+        party["state"] = 1
+        party = (
+            supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
         )
 
-    image = request.FILES.get("image")
-    file_extension = image.name.split(".")[-1].lower()
-    image_bytes = apply_frame(request.FILES.get("image"))
-    image_id = str(uuid.uuid4())
-    file_path = f"{image_id}.{file_extension}"
-    upload_response = supabase.storage.from_("images").upload(file_path, image_bytes)
-    if not upload_response.path:
-        return Response(
-            {"error": "Failed to upload image"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-    # 이미지 테이블에 정보 저장 (URL 구성 수정)
-    public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/images/{file_path}"
-    supabase.table("images").insert(
-        {"id": image_id, "party_id": party["id"], "url": public_url}
-    ).execute()
-
-    for omw_id in party["omw_ids"]:
-        user = supabase.table("users").select("*").eq("id", omw_id).execute().data[0]
-        supabase.table("users").update(
-            {"level": user["level"] + 5, "num_parties": user["num_parties"] + 1}
-        ).eq("id", omw_id).execute()
-
-    party["state"] = 1
-
-    party = supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
-    process_party_response(party)
-    party["image_url"] = public_url
-
-    return Response(party, status=status.HTTP_200_OK)
+        return Response({"url": public_url}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(
+    method="GET",
+    tags=["parties"],
+    operation_summary="내 파티 목록 조회",
+    operation_description="참여했거나 주최한 파티 목록을 조회합니다.",
+    responses={
+        200: openapi.Response(
+            description="성공",
+            schema=openapi.Schema(
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "id": openapi.Schema(type=openapi.TYPE_STRING),
+                        "created_at": openapi.Schema(type=openapi.TYPE_STRING),
+                        "title": openapi.Schema(type=openapi.TYPE_STRING),
+                        "destination": openapi.Schema(type=openapi.TYPE_STRING),
+                        "meet_at": openapi.Schema(type=openapi.TYPE_STRING),
+                        "num_participants": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "remaining_num": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "coordinates": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_NUMBER),
+                        ),
+                        "state": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+        ),
+        400: openapi.Response(description="잘못된 요청"),
+    },
+)
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
 def parties_my(request):
-    user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+    try:
+        # user_id = request.user.id
+        user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
-    parties = (
-        supabase.table("parties")
-        .select("*")
-        .or_(
-            "organizer_id.eq." + user_id + "," + "participant_ids.cs.{" + user_id + "}",
+        parties = (
+            supabase.table("parties")
+            .select("*")
+            .or_(f"organizer_id.eq.{user_id},participant_ids.cs.{{{user_id}}}")
+            .order("created_at", desc=True)
+            .execute()
+            .data
         )
-        .order("created_at", desc=True)
-        .execute()
-        .data
-    )
 
-    map(
-        process_party_response,
-        parties,
-    )
+        if not parties:
+            return Response([], status=status.HTTP_200_OK)
 
-    return Response(parties, status=status.HTTP_200_OK)
+        # 이미지 데이터 조회
+        images = (
+            supabase.table("images")
+            .select("*")
+            .in_("party_id", [party["id"] for party in parties])
+            .execute()
+            .data
+        )
+
+        # reconstruct response
+        reconstructed_data = []
+        for party in parties:
+            data = {
+                "id": party["id"],
+                "created_at": party["created_at"],
+                "title": party["title"],
+                "destination": party["destination"],
+                "meet_at": party["meet_at"],
+                "num_participants": len(party["participant_ids"]),
+                "remaining_num": party["max_users"] - len(party["participant_ids"]),
+                "coordinates": party["coordinates"],
+                "parking_spot": party["parking_spot"],
+                "state": PARTY_STATE_MAP[party["state"]],
+            }
+
+            # 이미지 URL 추가
+            for image in images:
+                if image["party_id"] == party["id"]:
+                    data["image_url"] = image["url"]
+                    break
+
+            reconstructed_data.append(data)
+
+        return Response(reconstructed_data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
