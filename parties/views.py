@@ -98,7 +98,7 @@ def parties_detail(request, party_id):
         organizer_nickname = organizer_response.data[0]["nickname"]
 
         # 참가자들의 상태 정보 구성
-        participants_status = {}
+        participants_status = []
         if party["participant_ids"]:
             # 모든 참가자의 닉네임 한 번에 조회
             participants_data = (
@@ -111,10 +111,27 @@ def parties_detail(request, party_id):
 
             # 참가자별 상태 정보 구성
             for participant in participants_data:
-                participants_status[participant["user_id"]] = {
-                    "nickname": participant["nickname"],
-                    "status": participant["user_id"] in (party.get("omy_ids") or []),
-                }
+                participants_status.append(
+                    {
+                        "id": participant["user_id"],
+                        "nickname": participant["nickname"],
+                        "status": participant["user_id"]
+                        in (party.get("omw_ids") or []),
+                    }
+                )
+
+        if party["state"] == 1:
+            party["available_action"] = (
+                "PHOTO" if user_id == party["organizer_id"] else "FINISHED"
+            )
+        elif [p for p in participants_status if p["status"] and p["id"] == user_id]:
+            party["available_action"] = "END_RIDE"
+        elif (
+            user_id not in party["participant_ids"] and user_id != party["organizer_id"]
+        ):
+            party["available_action"] = "JOIN"
+        else:
+            party["available_action"] = "START_RIDE"
 
         # 이미지 url
         image_response = (
@@ -141,6 +158,7 @@ def parties_detail(request, party_id):
             "coordinates": party["coordinates"],
             "parking_spot": party["parking_spot"],
             "state": PARTY_STATE_MAP[party["state"]],
+            "available_action": party["available_action"],
         }
 
         return Response(reconstructed_data, status=status.HTTP_200_OK)
