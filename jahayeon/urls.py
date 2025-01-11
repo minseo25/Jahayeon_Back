@@ -37,6 +37,7 @@ urlpatterns = [
     path("api/v1/ai/", include("ai.urls")),
     path("api/v1/users/", include("users.urls")),
     path("api/v1/events/", include("events.urls")),
+    path("api/v1/parties/", include("parties.urls")),
     path(
         "swagger/",
         schema_view.with_ui("swagger", cache_timeout=0),

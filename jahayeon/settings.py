@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "ai",
     "users",
     "events",
+    "parties",
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
