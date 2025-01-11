@@ -8,4 +8,5 @@ urlpatterns = [
     path("<int:event_id>/join/", views.events_join, name="events_join"),
     path("<int:event_id>/complete/", views.events_complete, name="events_complete"),
     path("", views.events_list, name="events"),
+    path("my/", views.events_my, name="events_my"),
 ]

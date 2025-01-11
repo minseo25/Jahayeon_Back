@@ -45,6 +45,11 @@ supabase: Client = create_client(
                         "num_completed": openapi.Schema(type=openapi.TYPE_INTEGER),
                         "remaining_num": openapi.Schema(type=openapi.TYPE_INTEGER),
                         "thumbnail_url": openapi.Schema(type=openapi.TYPE_STRING),
+                        "coordinates": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_NUMBER),
+                            description="[위도, 경도] 형식의 좌표",
+                        ),
                     },
                 ),
             ),
@@ -96,6 +101,7 @@ def events_list(request):
                 "remaining_num": event["max_users"]
                 - len(event["started_user_ids"])
                 - len(event["completed_user_ids"]),
+                "coordinates": event["coordinates"],
             }
 
             # 이미지 추가
@@ -170,6 +176,20 @@ def events_list(request):
             description="이벤트 이미지",
             required=False,
         ),
+        openapi.Parameter(
+            "x_coordinate",
+            in_=openapi.IN_FORM,
+            type=openapi.TYPE_NUMBER,
+            description="위도",
+            required=True,
+        ),
+        openapi.Parameter(
+            "y_coordinate",
+            in_=openapi.IN_FORM,
+            type=openapi.TYPE_NUMBER,
+            description="경도",
+            required=True,
+        ),
     ],
     responses={
         201: openapi.Response(
@@ -185,6 +205,11 @@ def events_list(request):
                     "destination": openapi.Schema(type=openapi.TYPE_STRING),
                     "expiry": openapi.Schema(type=openapi.TYPE_STRING),
                     "max_users": openapi.Schema(type=openapi.TYPE_INTEGER),
+                    "coordinates": openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(type=openapi.TYPE_NUMBER),
+                        description="[위도, 경도] 형식의 좌표",
+                    ),
                 },
             ),
         ),
@@ -213,6 +238,10 @@ def events_create(request):
             "host_name": request.data.get("host_name"),
             "destination": request.data.get("destination"),
             "max_users": int(request.data.get("max_users")),
+            "coordinates": [
+                float(request.data.get("x_coordinate")),
+                float(request.data.get("y_coordinate")),
+            ],
         }
 
         event = supabase.table("events").insert(data).execute().data[0]
@@ -264,6 +293,11 @@ def events_create(request):
                     ),
                     "num_started": openapi.Schema(type=openapi.TYPE_INTEGER),
                     "num_completed": openapi.Schema(type=openapi.TYPE_INTEGER),
+                    "coordinates": openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(type=openapi.TYPE_NUMBER),
+                        description="[위도, 경도] 형식의 좌표",
+                    ),
                 },
             ),
         ),
@@ -325,6 +359,7 @@ def events_detail(request, event_id):
             "remaining_num": event["max_users"]
             - len(event["started_user_ids"])
             - len(event["completed_user_ids"]),
+            "coordinates": event["coordinates"],
             "status": user_status,  # started, completed, not_started
         }
 
@@ -362,7 +397,7 @@ def events_detail(request, event_id):
 def events_join(request, event_id):
     try:
         # user_id = request.user.user_id
-        user_id = "6534d0b9-694e-4458-a98f-cfa63f5ae8a6"
+        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
         event = (
             supabase.table("events")
             .select("*")
@@ -431,7 +466,7 @@ def events_join(request, event_id):
 def events_complete(request, event_id):
     try:
         # user_id = request.user.user_id
-        user_id = "6534d0b9-694e-4458-a98f-cfa63f5ae8a6"
+        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
         event = (
             supabase.table("events")
             .select("*")
@@ -467,11 +502,70 @@ def events_complete(request, event_id):
             {"completed_user_ids": event["completed_user_ids"] + [user_id]}
         ).eq("id", event_id).execute().data
 
+        # level 업데이트 (기존 user level의 +5)
+        user = (
+            supabase.table("users")
+            .select("*")
+            .eq("user_id", user_id)
+            .single()
+            .execute()
+            .data
+        )
+        supabase.table("users").update(
+            {"level": user["level"] + 5, "num_events": user["num_events"] + 1}
+        ).eq("user_id", user_id).execute().data
+
         return Response(
             {"msg": f"{user_id} completed {event_id}"}, status=status.HTTP_200_OK
         )
     except Exception as e:
         return Response(
             {"error": f"이벤트 완료 중 오류가 발생했습니다: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+def events_my(request):
+    try:
+        # user_id = request.user.user_id
+        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
+
+        events = (
+            supabase.table("events")
+            .select("*")
+            .or_(
+                f"started_user_ids.cs.{{{user_id}}},completed_user_ids.cs.{{{user_id}}}"
+            )
+            .order("expiry", desc=False)
+            .execute()
+            .data
+        )
+
+        # reconstruct response
+        reconstructed_data = []
+        for event in events:
+            data = {
+                "id": event["id"],
+                "created_at": event["created_at"],
+                "title": event["title"],
+                "host_name": event["host_name"],
+                "destination": event["destination"],
+                "expiry": event["expiry"],
+                "num_started": len(event["started_user_ids"]),
+                "num_completed": len(event["completed_user_ids"]),
+                "remaining_num": event["max_users"]
+                - len(event["started_user_ids"])
+                - len(event["completed_user_ids"]),
+                "coordinates": event["coordinates"],
+            }
+            reconstructed_data.append(data)
+        events = reconstructed_data
+
+        return Response(events, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": f"이벤트 조회 중 오류가 발생했습니다: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
