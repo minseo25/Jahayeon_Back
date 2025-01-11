@@ -82,6 +82,9 @@ def parties_create(request):
     party = request.data
     del party["images"]
 
+    # 주차 장소 임의 배정
+    party["parking_spot"] = [party["coordinates"][0] + 10, party["coordinates"][1] + 15]
+
     party["organizer_id"] = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
     party = supabase.table("parties").insert(party).execute().data[0]
