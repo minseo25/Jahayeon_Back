@@ -511,9 +511,9 @@ def events_complete(request, event_id):
             .execute()
             .data
         )
-        supabase.table("users").update({"level": user["level"] + 5}).eq(
-            "user_id", user_id
-        ).execute().data
+        supabase.table("users").update(
+            {"level": user["level"] + 5, "num_events": user["num_events"] + 1}
+        ).eq("user_id", user_id).execute().data
 
         return Response(
             {"msg": f"{user_id} completed {event_id}"}, status=status.HTTP_200_OK
