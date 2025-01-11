@@ -9,4 +9,5 @@ urlpatterns = [
     path("<int:party_id>/join/", views.parties_join, name="parties_join"),
     path("<int:party_id>/start/", views.parties_start, name="parties_start"),
     path("<int:party_id>/end/", views.parties_end, name="parties_end"),
+    path("my/", views.parties_my, name="parties_my"),
 ]

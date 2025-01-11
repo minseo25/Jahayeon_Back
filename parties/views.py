@@ -41,7 +41,14 @@ def parties_detail(request, party_id):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def parties_list(request):
-    parties = supabase.table("parties").select("*").neq("state", 2).execute().data
+    parties = (
+        supabase.table("parties")
+        .select("*")
+        .neq("state", 2)
+        .order("created_at", desc=True)
+        .execute()
+        .data
+    )
     map(
         process_party_response,
         parties,
@@ -129,6 +136,7 @@ def parties_start(request, party_id):
     return Response(party, status=status.HTTP_200_OK)
 
 
+# TODO: Upload image
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def parties_end(request, party_id):
@@ -159,3 +167,27 @@ def parties_end(request, party_id):
     process_party_response(party)
 
     return Response(party, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def parties_my(request):
+    user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+
+    parties = (
+        supabase.table("parties")
+        .select("*")
+        .or_(
+            "organizer_id.eq." + user_id + "," + "participant_ids.cs.{" + user_id + "}",
+        )
+        .order("created_at", desc=True)
+        .execute()
+        .data
+    )
+
+    map(
+        process_party_response,
+        parties,
+    )
+
+    return Response(parties, status=status.HTTP_200_OK)

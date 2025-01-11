@@ -232,8 +232,15 @@ def user_history(request):
         # parties에 참여한 경우
         parties = (
             supabase.table("parties")
-            .select("id, created_at")
-            .contains("participant_ids", "{" + user_id + "}")
+            .select("*")
+            .or_(
+                "organizer_id.eq."
+                + user_id
+                + ","
+                + "participant_ids.cs.{"
+                + user_id
+                + "}",
+            )
             .order("created_at", desc=True)
             .execute()
         )
