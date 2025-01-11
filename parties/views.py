@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
 
+import cv2
+import numpy as np
 from django.conf import settings
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -265,6 +267,43 @@ PARKING_SPOTS = [
 ]
 
 
+def apply_frame(
+    uploaded_image,
+):
+    """
+    Places overlay image on top of the background image, respecting transparency
+
+    Parameters:
+    uploaded_image: Django UploadedFile from request.FILES
+    overlay_path: Path to PNG overlay with transparency
+    """
+    overlay_path = "./public/gcoo_frame.png"
+
+    # Convert Django uploaded file to numpy array
+    image_bytes = uploaded_image.read()
+    uploaded_image.seek(0)
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    background = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    # Load overlay (PNG with transparency)
+    overlay = cv2.imread(overlay_path, cv2.IMREAD_UNCHANGED)
+
+    # Resize overlay to match background dimensions
+    overlay_resized = cv2.resize(overlay, (background.shape[1], background.shape[0]))
+
+    # Create mask from alpha channel
+    alpha_channel = overlay_resized[:, :, 3] / 255.0
+    alpha_3_channel = np.stack([alpha_channel, alpha_channel, alpha_channel], axis=2)
+
+    # Combine images
+    foreground = overlay_resized[:, :, :3]
+    result = background * (1 - alpha_3_channel) + foreground * alpha_3_channel
+
+    # Save result
+    _, buffer = cv2.imencode(".png", result)
+    return buffer.tobytes()
+
+
 @swagger_auto_schema(
     method="POST",
     tags=["parties"],
@@ -488,9 +527,22 @@ def parties_start(request, party_id):
     return Response(party, status=status.HTTP_200_OK)
 
 
-# TODO: Upload image
+@swagger_auto_schema(
+    method="post",
+    consumes=["multipart/form-data"],
+    manual_parameters=[
+        openapi.Parameter(
+            "image",
+            in_=openapi.IN_FORM,
+            type=openapi.TYPE_FILE,
+            description="이벤트 이미지",
+            required=False,
+        ),
+    ],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@parser_classes([MultiPartParser, FormParser])
 def parties_end(request, party_id):
     user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
@@ -506,17 +558,40 @@ def parties_end(request, party_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if party["state"] != 1:
+    if party["state"] != 0:
         return Response(
-            {"error": "Party is not ongoing"},
+            {"error": "Party is already finished"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    party["state"] = 2
-    party["completed_at"] = datetime.now().isoformat()
+    image = request.FILES.get("image")
+    file_extension = image.name.split(".")[-1].lower()
+    image_bytes = apply_frame(request.FILES.get("image"))
+    image_id = str(uuid.uuid4())
+    file_path = f"{image_id}.{file_extension}"
+    upload_response = supabase.storage.from_("images").upload(file_path, image_bytes)
+    if not upload_response.path:
+        return Response(
+            {"error": "Failed to upload image"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    # 이미지 테이블에 정보 저장 (URL 구성 수정)
+    public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/images/{file_path}"
+    supabase.table("images").insert(
+        {"id": image_id, "party_id": party["id"], "url": public_url}
+    ).execute()
+
+    for omw_id in party["omw_ids"]:
+        user = supabase.table("users").select("*").eq("id", omw_id).execute().data[0]
+        supabase.table("users").update(
+            {"level": user["level"] + 5, "num_parties": user["num_parties"] + 1}
+        ).eq("id", omw_id).execute()
+
+    party["state"] = 1
 
     party = supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
     process_party_response(party)
+    party["image_url"] = public_url
 
     return Response(party, status=status.HTTP_200_OK)
 
