@@ -61,6 +61,50 @@ def parties_list(request):
     return Response(parties, status=status.HTTP_200_OK)
 
 
+PARKING_SPOTS = [
+    [37, 129],
+    [288, 336],
+    [177, 365],
+    [15, 421],
+    [156, 163],
+    [141, 432],
+    [274, 247],
+    [144, 321],
+    [171, 426],
+    [251, 350],
+    [268, 437],
+    [327, 245],
+    [31, 224],
+    [13, 268],
+    [334, 429],
+    [175, 209],
+    [56, 187],
+    [221, 325],
+    [184, 129],
+    [341, 338],
+    [234, 453],
+    [6, 294],
+    [286, 424],
+    [323, 409],
+    [193, 342],
+    [128, 237],
+    [158, 294],
+    [196, 393],
+    [194, 187],
+    [58, 442],
+    [339, 287],
+    [117, 423],
+    [311, 142],
+    [7, 396],
+    [216, 419],
+    [33, 279],
+    [299, 87],
+    [303, 425],
+    [280, 145],
+    [26, 451],
+]
+
+
 @swagger_auto_schema(
     method="post",
     consumes=["multipart/form-data"],
@@ -73,17 +117,43 @@ def parties_list(request):
             description="Multiple image files (optional)",
             required=False,
         ),
+        openapi.Parameter(
+            "x_coordinate",
+            in_=openapi.IN_FORM,
+            type=openapi.TYPE_NUMBER,
+            description="위도",
+            required=True,
+        ),
+        openapi.Parameter(
+            "y_coordinate",
+            in_=openapi.IN_FORM,
+            type=openapi.TYPE_NUMBER,
+            description="경도",
+            required=True,
+        ),
     ],
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser])
 def parties_create(request):
-    party = request.data
-    del party["images"]
+    party = {
+        "title": request.data.get("title"),
+        "description": request.data.get("description"),
+        "max_users": request.data.get("max_users"),
+        "coordinates": [
+            float(request.data.get("x_coordinate")),
+            float(request.data.get("y_coordinate")),
+        ],
+    }
+    if "images" in party:
+        del party["images"]
 
-    # 주차 장소 임의 배정
-    party["parking_spot"] = [party["coordinates"][0] + 10, party["coordinates"][1] + 15]
+    party["parking_spot"] = min(
+        PARKING_SPOTS,
+        key=lambda spot: (spot[0] - party["coordinates"][0]) ** 2
+        + (spot[1] - party["coordinates"][1]) ** 2,
+    )
 
     party["organizer_id"] = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
