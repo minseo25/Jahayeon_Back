@@ -214,6 +214,14 @@ def parties_list(request):
         if not parties:
             return Response([], status=status.HTTP_200_OK)
 
+        # 해당하는 parties의 이미지 조회
+        images = (
+            supabase.table("images")
+            .select("*")
+            .in_("party_id", [party["id"] for party in parties])
+            .execute()
+        )
+
         reconstructed_data = []
         for party in parties:
             data = {
@@ -227,15 +235,14 @@ def parties_list(request):
                 "coordinates": party["coordinates"],
                 "parking_spot": party["parking_spot"],
             }
-            reconstructed_data.append(data)
 
-        images = supabase.table("images").select("*").execute().data
-        # 이미지 추가
-        for party in parties:
-            for image in images:
+            # 이미지 추가
+            for image in images.data:
                 if image["party_id"] == party["id"]:
                     data["image_url"] = image["url"]
                     break
+
+            reconstructed_data.append(data)
 
         return Response(reconstructed_data, status=status.HTTP_200_OK)
     except Exception as e:
