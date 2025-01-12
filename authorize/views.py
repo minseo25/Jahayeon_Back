@@ -51,7 +51,7 @@ def google_login(request):
     # Supabase OAuth URL 생성
     # google을 provider로 지정하고, google 인증 후 사용자가 돌아올 redirect_uri를 지정
     redirect_uri = (
-        f"{settings.FRONTEND_URL}/auth/callback"  # 프론트엔드에서 지정한 콜백 URL
+        f"{settings.FRONTEND_URL}/callback/google"  # 프론트엔드에서 지정한 콜백 URL
     )
 
     auth_url = f"{settings.SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to={redirect_uri}"

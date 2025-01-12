@@ -64,7 +64,7 @@ supabase: Client = create_client(
     },
 )
 @api_view(["GET"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def events_list(request):
     try:
         events = (
@@ -311,11 +311,11 @@ def events_create(request):
     },
 )
 @api_view(["GET"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def events_detail(request, event_id):
     try:
-        # user_id = request.user.user_id
-        user_id = "6534d0b9-694e-4458-a98f-cfa63f5ae8a6"
+        user_id = request.user.user_id
+        # user_id = "6534d0b9-694e-4458-a98f-cfa63f5ae8a6"
 
         event = (
             supabase.table("events")
@@ -393,11 +393,11 @@ def events_detail(request, event_id):
     },
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def events_join(request, event_id):
     try:
-        # user_id = request.user.user_id
-        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
+        user_id = request.user.user_id
+        # user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
         event = (
             supabase.table("events")
             .select("*")
@@ -462,11 +462,11 @@ def events_join(request, event_id):
     },
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def events_complete(request, event_id):
     try:
-        # user_id = request.user.user_id
-        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
+        user_id = request.user.user_id
+        # user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
         event = (
             supabase.table("events")
             .select("*")
@@ -526,11 +526,11 @@ def events_complete(request, event_id):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def events_my(request):
     try:
-        # user_id = request.user.user_id
-        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
+        user_id = request.user.user_id
+        # user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
 
         events = (
             supabase.table("events")

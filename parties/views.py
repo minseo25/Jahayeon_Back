@@ -68,11 +68,11 @@ def process_party_response(party):
     },
 )
 @api_view(["GET"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def parties_detail(request, party_id):
     try:
-        # user_id = request.user.id
-        user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+        user_id = request.user.id
+        # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
         # 파티 정보 조회
         party_response = (
@@ -197,7 +197,7 @@ def parties_detail(request, party_id):
     },
 )
 @api_view(["GET"])
-@permission_classes([AllowAny])
+# @permission_classes([AllowAny])
 def parties_list(request):
     try:
         parties = (
@@ -343,6 +343,13 @@ def apply_frame(
             required=True,
         ),
         openapi.Parameter(
+            "organizer_id",
+            in_=openapi.IN_FORM,
+            type=openapi.TYPE_STRING,
+            description="주최자 UUID",
+            required=True,
+        ),
+        openapi.Parameter(
             "max_users",
             in_=openapi.IN_FORM,
             type=openapi.TYPE_INTEGER,
@@ -421,7 +428,7 @@ def apply_frame(
     },
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+@permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser])
 def parties_create(request):
     try:
@@ -429,6 +436,7 @@ def parties_create(request):
             "title": request.data.get("title"),
             "description": request.data.get("description"),
             "max_users": request.data.get("max_users"),
+            "organizer_id": request.data.get("organizer_id"),
             "coordinates": [
                 float(request.data.get("x_coordinate")),
                 float(request.data.get("y_coordinate")),
@@ -437,8 +445,6 @@ def parties_create(request):
             "meet_at": request.data.get("meet_at"),
         }
 
-        # party["organizer_id"] = request.user.id
-        party["organizer_id"] = "12b2ac5e-98f6-44be-b790-1305293b52bd"
         party["parking_spot"] = min(
             PARKING_SPOTS,
             key=lambda spot: (spot[0] - party["coordinates"][0]) ** 2
@@ -519,11 +525,11 @@ def parties_create(request):
     },
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def parties_join(request, party_id):
     try:
-        # user_id = request.user.id
-        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
+        user_id = request.user.id
+        # user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
 
         party = (
             supabase.table("parties")
@@ -608,11 +614,11 @@ def parties_join(request, party_id):
     },
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def parties_start(request, party_id):
     try:
-        # user_id = request.user.id
-        user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
+        user_id = request.user.id
+        # user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
 
         party = (
             supabase.table("parties")
@@ -710,12 +716,12 @@ def parties_start(request, party_id):
     },
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser])
 def parties_end(request, party_id):
     try:
-        # user_id = request.user.id
-        user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+        user_id = request.user.id
+        # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
         party = (
             supabase.table("parties")
@@ -820,11 +826,11 @@ def parties_end(request, party_id):
     },
 )
 @api_view(["GET"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def parties_my(request):
     try:
-        # user_id = request.user.id
-        user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+        user_id = request.user.id
+        # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
         parties = (
             supabase.table("parties")

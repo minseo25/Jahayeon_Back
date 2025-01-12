@@ -2,8 +2,9 @@ from django.conf import settings
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view  # , permission_classes
+
+# from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from supabase import Client, create_client
 
@@ -102,13 +103,12 @@ supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
     },
 )
 @api_view(["GET", "PATCH"])
-@permission_classes(
-    [AllowAny]
-)  # 일단 모든 사용자가 사용할 수 있도록 설정, 추후 제거 예정
+# @permission_classes([AllowAny])
 def user_profile(request):
     if request.method == "GET":
         try:
-            user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+            user_id = request.user.user_id
+            # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
             user_data = (
                 supabase.table("users").select("*").eq("user_id", user_id).execute()
             )
@@ -147,7 +147,8 @@ def user_profile(request):
 
     elif request.method == "PATCH":
         try:
-            user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+            user_id = request.user.user_id
+            # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
             nickname = request.data.get("nickname")
 
             user_exists = (
@@ -222,12 +223,11 @@ def user_profile(request):
     },
 )
 @api_view(["GET"])
-@permission_classes(
-    [AllowAny]
-)  # 일단 모든 사용자가 사용할 수 있도록 설정, 추후 제거 예정
+# @permission_classes([AllowAny])
 def user_history(request):
     try:
-        user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
+        user_id = request.user.user_id
+        # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
         # parties에 참여한 경우
         parties = (

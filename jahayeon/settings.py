@@ -58,12 +58,12 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "jahayeon.urls"
@@ -150,7 +150,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,  # Rotate refresh tokens after each use
     "BLACKLIST_AFTER_ROTATION": True,  # Blacklist old refresh tokens
@@ -170,7 +170,9 @@ FRONTEND_URL = env("FRONTEND_URL")
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # add your frontend deployed url here
+    "http://localhost:3091",
+    "http://127.0.0.1:3091",
+    "https://blackout-jahayeon.vercel.app",
     "https://jahayeon-back.fly.dev",
 ]
 
@@ -185,5 +187,7 @@ CORS_ALLOW_HEADERS = [
 ]
 CSRF_TRUSTED_ORIGINS = [
     "https://jahayeon-back.fly.dev",
-    # add your frontend deployed url here
+    "https://blackout-jahayeon.vercel.app",
+    "http://localhost:3091",
+    "http://127.0.0.1:3091",
 ]
