@@ -120,7 +120,9 @@ def parties_detail(request, party_id):
                     }
                 )
 
-        if party["state"] == 1:
+        if user_id in party["finished_ids"]:
+            party["available_action"] = "PHOTO"
+        elif party["state"] == 1:
             party["available_action"] = (
                 "PHOTO" if user_id == party["organizer_id"] else "FINISHED"
             )
@@ -791,6 +793,24 @@ def parties_end(request, party_id):
         return Response({"url": public_url}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+def parties_endride(request, party_id):
+    user_id = request.user.user_id
+
+    party = (
+        supabase.table("parties").select("*").eq("id", party_id).single().execute().data
+    )
+
+    if user_id in party["omw_ids"]:
+        party["omw_ids"].remove(user_id)
+        party["finished_ids"].append(user_id)
+    party = supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
+    process_party_response(party)
+
+    return Response(party, status=status.HTTP_200_OK)
 
 
 @swagger_auto_schema(
