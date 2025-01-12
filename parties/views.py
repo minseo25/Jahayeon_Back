@@ -796,21 +796,31 @@ def parties_end(request, party_id):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 일단 모두 허용, 나중에 권한필요로 변경
+# @permission_classes([AllowAny])
 def parties_endride(request, party_id):
-    user_id = request.user.user_id
+    try:
+        user_id = request.user.user_id
 
-    party = (
-        supabase.table("parties").select("*").eq("id", party_id).single().execute().data
-    )
+        party = (
+            supabase.table("parties")
+            .select("*")
+            .eq("id", party_id)
+            .single()
+            .execute()
+            .data
+        )
 
-    if user_id in party["omw_ids"]:
-        party["omw_ids"].remove(user_id)
-        party["finished_ids"].append(user_id)
-    party = supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
-    process_party_response(party)
+        if user_id in party["omw_ids"]:
+            party["omw_ids"].remove(user_id)
+            party["finished_ids"].append(user_id)
+        party = (
+            supabase.table("parties").update(party).eq("id", party_id).execute().data[0]
+        )
+        process_party_response(party)
 
-    return Response(party, status=status.HTTP_200_OK)
+        return Response(party, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @swagger_auto_schema(
