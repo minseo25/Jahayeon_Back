@@ -71,7 +71,7 @@ def process_party_response(party):
 # @permission_classes([AllowAny])
 def parties_detail(request, party_id):
     try:
-        user_id = request.user.id
+        user_id = request.user.user_id
         # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
         # 파티 정보 조회
@@ -528,7 +528,7 @@ def parties_create(request):
 # @permission_classes([AllowAny])
 def parties_join(request, party_id):
     try:
-        user_id = request.user.id
+        user_id = request.user.user_id
         # user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
 
         party = (
@@ -617,7 +617,7 @@ def parties_join(request, party_id):
 # @permission_classes([AllowAny])
 def parties_start(request, party_id):
     try:
-        user_id = request.user.id
+        user_id = request.user.user_id
         # user_id = "56f9b4f6-327d-4138-b820-2d2cf54a3425"
 
         party = (
@@ -720,7 +720,7 @@ def parties_start(request, party_id):
 @parser_classes([MultiPartParser, FormParser])
 def parties_end(request, party_id):
     try:
-        user_id = request.user.id
+        user_id = request.user.user_id
         # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
         party = (
@@ -829,7 +829,7 @@ def parties_end(request, party_id):
 # @permission_classes([AllowAny])
 def parties_my(request):
     try:
-        user_id = request.user.id
+        user_id = request.user.user_id
         # user_id = "12b2ac5e-98f6-44be-b790-1305293b52bd"
 
         parties = (
